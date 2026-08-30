@@ -1,1 +1,0 @@
-select af_repo.af_delete_view_contexts('bl.file_bl_nna_illust_master');
