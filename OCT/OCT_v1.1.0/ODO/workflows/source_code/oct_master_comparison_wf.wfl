@@ -1,0 +1,45 @@
+#This workflow use to populate data from file to pub_work.oct_ddl_tier1&pub_work.oct_ddl_tier2 table and compare the data of both table
+oct_master_comparison_wf(retention=90,v_comparison_of=[DDL:SCRIPT:BOTH]): This workflow use to populate data from file to pub_work.oct_ddl_tier1&pub_work.oct_ddl_tier2 table and compare the data of both table
+# Project:  Ford
+#
+# Name: oct_master_comparison_wf.wfl
+#
+# Purpose:This workflow use to populate data from file to pub_work.oct_ddl_tier1&pub_work.oct_ddl_tier2 table and compare the data of both table
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     30-05-2024     BK           Initial Version
+#   2     31-01-2025     SA          [FDNGPUB-2208] - Eliminated use of DR, used AF functionality to load .csv/.gz files directly through AF.
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# 	BK				Bipin Kumar
+# 	SA				Sonu Aggarwal
+#===========================================================
+    output_version
+    output_options
+    set :tag_area = "SD"
+	set :tag_other = "OCT"
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+    set :comparison_of=&&v_comparison_of&&
+	if comparison_of=='DDL'
+		serial # DDL
+			execute oct_ddl_tier1_wf #Loading of file data from Tier1 Folder to table pub_work.oct_ddl_tier1
+			execute oct_ddl_tier2_wf #Loading of file data from Tier2 Folder to table pub_work.oct_ddl_tier2
+			execute oct_comparison_report_wf
+	if comparison_of=='SCRIPT'
+		serial # SCRIPT
+			execute oct_script_tier1_wf #Loading of file data from Tier1 Folder to table pub_work.oct_ddl_tier1
+			execute oct_script_tier2_wf #Loading of file data from Tier2 Folder to table pub_work.oct_ddl_tier2
+			execute oct_comparison_report_wf # Data Comparison of table pub_work.oct_ddl_tier1 and pub_work.oct_ddl_tier2
+	if comparison_of=='BOTH'
+		serial # DDL
+			execute oct_ddl_tier1_wf #Loading of file data from Tier1 Folder to table pub_work.oct_ddl_tier1
+			execute oct_ddl_tier2_wf #Loading of file data from Tier2 Folder to table pub_work.oct_ddl_tier2
+			execute oct_comparison_report_wf # Data Comparison of table pub_work.oct_ddl_tier1 and pub_work.oct_ddl_tier2
+		serial # SCRIPT
+			execute oct_script_tier1_wf #Loading of file data from Tier1 Folder to table pub_work.oct_ddl_tier1
+			execute oct_script_tier2_wf #Loading of file data from Tier2 Folder to table pub_work.oct_ddl_tier2
+			execute oct_comparison_report_wf # Data Comparison of table pub_work.oct_ddl_tier1 and pub_work.oct_ddl_tier2
+    output_options

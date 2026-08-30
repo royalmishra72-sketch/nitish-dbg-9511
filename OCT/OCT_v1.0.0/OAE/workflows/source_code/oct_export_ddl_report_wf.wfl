@@ -1,0 +1,47 @@
+# This workflow used to export DDL from DB and send them on email.
+oct_export_ddl_report_wf(schema_name=ALL,object_type=[ALL:CONTEXT_OPTIONS:FUNCTION:GRANTS:META_TABLE:PARTITION_NAME:PROCEDURE:SCHEMA_SIZE:TABLE:VIEW:WORKFLOW],object_name=ALL) : This workflow used to export DDL from DB and send them on email.
+# Project:  FORD
+#
+# Name: oct_export_ddl_report_wf.wfl
+#
+# Purpose:This workflow used to export DDL from DB and send them on email.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     03-Mar-2024    BK          Initial Version
+#	2	  26-Jul-2024	 RT			 Input parameter correction
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# BK				BIPIN KUMAR
+# RT				Richa Thakur
+#===========================================================
+	output_version
+	output_options
+	set :tag_domain = "Reports"
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+	load :is_schema_check = "select case when ('&&schema_name&&' ='ALL' or '&&schema_name&&'='') then 'NO CHECK' else 'CHECK' end"
+	load :is_object_type_check = "select case when ('&&object_type&&' ='ALL' or '&&object_type&&'='') then 'NO CHECK' else 'CHECK' end"
+	load :is_object_name_check="select case when ('&&object_name&&' ='ALL' or '&&object_name&&' ='') then 'NO CHECK' else 'CHECK' end"
+	parallel # checks 
+		serial #Check if schema is valid
+			if is_schema_check == "CHECK"
+				load :is_valid_schema ="select (length('&&schema_name&&') - length(replace('&&schema_name&&',',','')))::int"
+				if is_valid_schema > 0
+					message E "Passing multiple schema from input parameter is not supported. To execute WF for multiple Schema, Please update the schema_ddl value of OCT parameter accordingly in pba_param_t table"	
+		serial #Check if object_type is valid
+			if is_object_type_check=="CHECK"
+				load :is_valid_object_type ="select (length('&&object_type&&') - length(replace('&&object_type&&',',','')))::int"
+				if is_valid_object_type > 0
+					message E "Passing multiple object_type from input parameter is not supported. To execute WF for multiple object_type, Please update the ddl_type value of OCT parameter accordingly in pba_param_t table"	
+		serial #Check if multiple object_name has been passed
+			if is_object_name_check=="CHECK"
+				load :is_valid_object ="select (length('&&object_name&&') - length(replace('&&object_name&&',',','')))::int"
+				if is_valid_object > 0
+					message W "Passing multiple objects from input parameter is not supported. You can pass either one valid object name or ALL(To export all objects based on schema_name and object_type)"	
+	load :p_in_schema_name = "select upper('&&schema_name&&')"
+	load :p_in_object_type ="select upper('&&object_type&&')"
+	load :p_in_object_name = "select lower('&&object_name&&')"
+	report oct_ddl_export(:p_in_schema_name, :p_in_object_type, :p_in_object_name)
+	output_options

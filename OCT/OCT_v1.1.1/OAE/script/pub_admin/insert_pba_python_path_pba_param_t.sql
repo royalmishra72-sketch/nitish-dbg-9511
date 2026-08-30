@@ -1,0 +1,2 @@
+insert into pub_admin.pba_param_t (param_nm,param_value_txt,param_dsc) 
+values ('pba_python_path','/opt/cornerstone/links/python/python3.11','This is storing the python version path that linux server python scripts are using') on conflict (param_nm) do nothing;

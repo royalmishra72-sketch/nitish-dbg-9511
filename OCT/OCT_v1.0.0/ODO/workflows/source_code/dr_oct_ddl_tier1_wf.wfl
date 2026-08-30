@@ -1,0 +1,28 @@
+# This workflow use to populate DDL from file to oct_ddl_tier1 table
+dr_oct_ddl_tier1_wf(retention=180):  This workflow use to populate DDL from file to oct_ddl_tier1 table
+# Project:  FORD NG DATA PUBLISHING
+#
+# Name: dr_oct_ddl_tier1_wf.wfl
+#
+# Purpose:  This workflow use to populate DDL from file to oct_ddl_tier1 table
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     01-05-2024    BK           Initial Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# 	BK				Bipin Kumar
+#===========================================================
+	output_version
+	output_options
+	set :tag_area = "SD"
+	set :tag_other = "OCT"
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+	serial #Checks of number of file available with pattern "oct_ddl_export" (Excluding files with .done extention).
+		load :epo_path= "select pub_admin.get_parameter('PBAEPORootPath')"
+		load :script_path="select root||script.get_parameter||'OCT/' from pub_admin.get_parameter('PBAEnvRootPath') root cross join (select pub_admin.get_parameter('PATH_COMMON_SCRIPT')) script"
+		run &&script_path&&oct_FileCount.sh  &&epo_path&&OCT/TIER1 "*oct_ddl_export*"
+	datareceipt OCT_DDL_LOADING_TIER1 #DR Call & load  oct_ddl_tier1 table
+	output_options
