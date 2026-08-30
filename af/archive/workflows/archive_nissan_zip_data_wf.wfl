@@ -1,0 +1,44 @@
+#workflow used to archive NISSAN ZIP data.
+archive_nissan_zip_data_wf(retention=180):  This workflow is used to archive NISSAN ZIP data.
+# Project:  NISSAN NG DATA PUBLISHING
+#
+# Name: archive_nissan_zip_data_wf.wfl
+#
+# Purpose:  This workflow is used to archive NISSAN ZIP data.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date          Revisor      Comment
+#   1     04-AUG-2023    NKM          Initial Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# NKM                Nitish Kumar Mishra
+#===========================================================
+	output_version
+	output_options
+	set :tag_area = "Feed to BL"
+	set :tag_other = "Archive"
+	load :root_path= "select pub_admin.get_parameter('PBAEnvRootPath')"
+	load :epo_path= "select pub_admin.get_parameter('PBAEPORootPath')"
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD1 &&root_path&&/data/depot/archive/NML/CD1 CD1
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD2 &&root_path&&/data/depot/archive/NML/CD2 CD2
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD4 &&root_path&&/data/depot/archive/NML/CD4 CD4
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD5 &&root_path&&/data/depot/archive/NML/CD5 CD5
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD6 &&root_path&&/data/depot/archive/NML/CD6 CD6 
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD7 &&root_path&&/data/depot/archive/NML/CD7 CD7
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NML/Source/CD3 &&root_path&&/data/depot/archive/NML/CD3 CD3
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NNA/Parts &&root_path&&/data/depot/archive/NNA/Parts PARTS
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NNA/Supersession &&root_path&&/data/depot/archive/NNA/Supersession SUPERSESSION
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NNA/Price &&root_path&&/data/depot/archive/NNA/Price PRICE
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/NNA/Servfile &&root_path&&/data/depot/archive/NNA/Servfile SERVFILE
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/GroupSectionFeed &&root_path&&/data/depot/archive/GroupSectionFeed GROUPSEC
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/Images/TextFeed &&root_path&&/data/depot/archive/Images/TextFeed IMAGE
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/VA_Parts &&root_path&&/data/depot/archive/VA_Parts VA_PARTS
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/Synonyms &&root_path&&/data/depot/archive/Synonyms MISC
+	run &&root_path&&/app/script/archive_feeds.sh &&epo_path&&/CatalogPdf &&root_path&&/data/depot/archive/CatalogPdf CATALOGPDF
+	output_options
+	
+	
+	
+	
