@@ -1,0 +1,47 @@
+#Workflow used to execute automated data check qa reports
+adc_qa_reports_wf(retention=90,target_url=[pia:prd:stg]): Workflow used to execute automated data check qa reports
+# Project:  Nissan NG DATA PUBLISHING
+#
+# Name: adc_qa_reports_wf.wfl
+#
+# Purpose:  Workflow used to execute automated data check qa reports
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     07-JUNE-2024    NKM        Initial Version 
+#   2     22-OCT-2025     NKM        Added variable pba_java_path to call jkd using pba_param_t
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# NKM               Nitish K Mishra
+#===========================================================
+    output_version
+    output_options
+	set :tag_area = "ADC QA reports"
+	load :v_env_root_path = "select pub_admin.get_parameter('PBAEnvRootPath')"
+	load :v_adc_input_relpath = "select pub_admin.get_parameter('ADC_INPUT_PATH')"
+	load :v_adc_output_relpath = "select pub_admin.get_parameter('ADC_OUTPUT_PATH')"
+	load :v_epo_root_path = "select pub_admin.get_parameter('PBAEPORootPath')"
+	load :v_adc_script_relpath = "select pub_admin.get_parameter('ADC_SCRIPT_PATH')"
+	load :pba_java_path = "select pub_admin.get_parameter('pba_java_path')"
+	load :tier = "select case when current_database() like '%%pub_dev%%db' then 'dev' WHEN current_database() like '%%pub_int%%db' then 'int' WHEN current_database() like '%%pub_tst%%db' then 'tst' when current_database() like '%%pub_prd%%db' then 'prd' end"
+	if tier == "prd" and target_url=="stg" ## Execution of this template should only be done only on PRD
+			message E "This workflow should only be executed for PRD or PIA url from PRD tier."
+	else
+		set :adc_vault_loc ="pub_admin/adc_epc5_&&target_url&&_url"
+	load :dataset_code = "select pub_admin.get_parameter('ADC_OE_DATASET_CODE')"
+	set :adc_input_full_path = "&&v_epo_root_path&&&&v_adc_input_relpath&&"
+	set :adc_output_full_path = "&&v_epo_root_path&&&&v_adc_output_relpath&&"
+	set :adc_script_full_path = "&&v_env_root_path&&&&v_adc_script_relpath&&"
+	set :attachReport = "true"
+	if target_url=="pia"
+		load :bypassproxy = "select pub_admin.get_parameter('ADC_BYPASSPROXY_PIA')"
+	if target_url=="prd"
+		load :bypassproxy = "select pub_admin.get_parameter('ADC_BYPASSPROXY_PRD')"
+	if target_url=="stg"
+		load :bypassproxy = "select pub_admin.get_parameter('ADC_BYPASSPROXY_STG')"
+	load :emailList = "select user_email_list from bl.bl_sbs_pub_run_notification where process_name='START_PROCESS'"
+	set :cwd_path ="&&v_env_root_path&&/app/script/" 	
+	run "&&v_env_root_path&&/app/script/adcEPC5Call.sh" &&_dbid&& "&&adc_vault_loc&&" "&&adc_input_full_path&&" "&&adc_output_full_path&&" "&&adc_script_full_path&&" "&&dataset_code&&" "&&emailList&&" "&&attachReport&&" "&&bypassproxy&&"  "&&pba_java_path&&" #adcepc5call
+ 	output_options

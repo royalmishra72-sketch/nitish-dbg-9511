@@ -1,0 +1,54 @@
+#workflow is used to download feeds.
+mwf_download_nissan_feeds_wf:  This workflow is used to download Nissan feeds .
+# Project:  NISSAN DATA PUBLISHING
+#
+# Name: mwf_download_nissan_feeds_wf.wfl
+#
+# Purpose:  This workflow is used to download Nissan feeds.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date          Revisor      Comment
+#   1     05-DEC-2023     NKM          Initial Version 
+#   2     05-Dec-2025     NKM          Rename Workflow Name and add Image download Process
+#   3     12-Jan-2026     NKM          Add SVG Image Download Process
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# NKM               Nitish K Mishra
+#===========================================================
+	output_version
+	output_options	
+	set :tag_area = "Downloads"
+	set :tag_domain = "NISSAN FEEDS"
+	#set :dr_loadonly = "True"
+	set :v_process_name = "NISSAN_FEEDS_DOWNLOAD_START"
+	execute generic_email_wf
+	datareceipt DOWNLOAD_NNA_PRICE
+	datareceipt DOWNLOAD_NNA_SERVFILE
+	datareceipt DOWNLOAD_NNA_SUPERSN
+	datareceipt DOWNLOAD_NNA_PARTS
+	datareceipt DOWNLOAD_NML_CD1_FEED
+	datareceipt DOWNLOAD_NML_CD2_FEED
+	datareceipt DOWNLOAD_NML_CD3_FEED
+	datareceipt DOWNLOAD_NML_CD4_FEED
+	datareceipt DOWNLOAD_NML_CD5_FEED
+	datareceipt DOWNLOAD_NML_CD6_FEED
+	datareceipt DOWNLOAD_NML_CD7_FEED
+	datareceipt DOWNLOAD_SYNONYMS_FEED
+	datareceipt DOWNLOAD_VA_PARTS_FEED	
+	datareceipt DOWNLOAD_NNA_ILLUST_MASTER_EXCEL
+	datareceipt DOWNLOAD_ILLUSTRATION_CHANGE_EXCEL
+	datareceipt DOWNLOAD_NIS_ILLUSTRATION_IMAGE_VC
+	datareceipt DOWNLOAD_NIS_SVG_IMAGE_ZIP
+	datareceipt DOWNLOAD_ATTACHMENT_GI
+	datareceipt DOWNLOAD_MODEL_IMAGE
+	datareceipt DOWNLOAD_CHAPTER_IMAGE
+	datareceipt DOWNLOAD_ATTACHMENT_PRICEBOOK
+	datareceipt DOWNLOAD_GROUPSECTION_FEED
+	datareceipt DOWNLOAD_SBS_ILLUST_EXCEL
+	set :grp_name = "'downloaded_feeds_report'"
+	execute rpt_generic_report_wf
+	set :v_process_name = "NISSAN_FEEDS_DOWNLOAD_END"
+	execute generic_email_wf
+	output_options

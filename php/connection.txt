@@ -1,0 +1,16 @@
+Nissan dev connection details:-
+
+ 
+
+Hostname: rich-pgrs-02-ip	
+Port: 10901	
+Maintenance Database: nis_pub_dev_1_db	
+Username: pub_work	
+Password: ur5ek0vIDJAqorBYSaK9AnUMj4Myca
+
+
+'dbname': 'nis_pub_dev_1_db',
+    'user': 'bl_app',
+    'password': 'LOr4sdAfAwuvUPisIq4hevyqXIRiMu',
+    'host': 'rich-pgrs-02-ip',
+    'port': '10901'

@@ -1,0 +1,23 @@
+#workflow used to populate data into pub_work.image_data_w table
+image_data_w_v_wf: This workflow will used publite mode to truncate and load data into pub_work.image_data_w table 
+# Project: NISSAN DATA PUBLISHING
+#
+# Name: image_data_w_v_wf.wfl
+#
+# Purpose:  This workflow is used to populate data into pub_work.image_data_w table
+#
+#===========================================================
+# Revision History
+#   Ref #  Date           Revisor       Comment
+#   1      05-AUG-2026    NKM           Initial Version 
+#===========================================================
+# Revisor
+# [Initials]		  [Full Name]
+#  NKM                 Nitish K Mishra
+#===========================================================
+    output_version
+    output_options
+	set :tag_area = "BL to Work"
+	set :tag_domain = "Image"
+	publish pub_work.image_data_w_v
+	output_options

@@ -1,0 +1,27 @@
+#Workflow used to clean files recursively from EPO
+clean_files_from_epo_wf(relative_target_path=,retention=90): Workflow used to clean files recursively from EPO
+# Project: Nissan NG DATA PUBLISHING
+#
+# Name: clean_files_from_epo_wf.wfl
+#
+# Purpose: This workflow is used to clean files recursively from EPO
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     07-JUNE-2024    NKM        Initial Version 
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# NKM               Nitish K Mishra
+#===========================================================
+	output_version
+	output_options
+	load :v_env_root_path = "select pub_admin.get_parameter('PBAEnvRootPath')"
+	load :v_epo_root_path = "select pub_admin.get_parameter('PBAEPORootPath')"
+	set :v_script_path = "&&v_env_root_path&&/app/script/"
+	if relative_target_path != '' and relative_target_path !=NONE
+		run &&v_script_path&&RecursiveCleanFiles.sh &&v_epo_root_path&&/&&relative_target_path&&
+	else
+		message W "Please pass the correct relative path, it can't be empty"
+	output_options

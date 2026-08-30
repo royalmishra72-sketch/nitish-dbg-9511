@@ -1,0 +1,48 @@
+# This workflow is used to generate Reports.
+run_grp_reports_wf(report_groupt=[bl_reports:work_reports:ctrg_reports:downloaded_feeds_report],report_type=[NORMAL:ADC]): This workflow is used to generate Reports.
+# Project: Nissan NG DATA PUBLISHING
+#
+# Name: run_grp_reports_wf.wfl
+#
+# Purpose:This workflow is used to generate Reports.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     02-Mar-2024    NKM           Initial Version
+#   2     20-May-2024    SV           QA Automation reports included
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# NKM             Nitish K Mishra
+# SV              Samit Verma 
+#===========================================================
+	output_version
+	output_options
+	set :tag_domain = "Reports"
+	set :grp_name = "'&&report_groupt&&'"
+ 	set :grp_rpt_type = "&&report_type&&"
+	if grp_rpt_type == NONE or grp_rpt_type ==''
+		set :grp_rpt_type ="NORMAL"
+ 	#load :grp_rpt_count_1 = "select count(1) as count from bl.bl_sbs_report_meta where report_group in(&&grp_name&&) and report_publish_flag='Y'"
+	if grp_rpt_type == "ADC"
+		set :group_name = "'adc_qa_&&report_groupt&&'"
+	    load :grp_rpt_count_1 = "select count(1) as count from bl.bl_sbs_report_meta where report_group in(&&group_name&&) and report_publish_flag='Y' and lower(report_group) like'adc_%%'"
+		if grp_rpt_count_1 != 0
+		    load :report_name = "select string_agg(report_name,',' order by report_group,report_name ) as rpt_nam from bl.bl_sbs_report_meta where report_group in(&&group_name&&) and report_publish_flag='Y' and lower(report_group) like'adc_%%'"
+			foreach :p_adc_report_name in :report_name
+					load :rep_cnt =  "select p_out_attachment from fnc_adc_qa_report('&&p_adc_report_name&&')"
+					if rep_cnt is not null
+				        report nis_adc_qa_reports(:p_adc_report_name)
+		else
+		    message D "No report list found to execute in this group"
+	else
+	    load :grp_rpt_count_1 = "select count(1) as count from bl.bl_sbs_report_meta where report_group in(&&grp_name&&) and report_publish_flag='Y' and lower(report_group) not like'adc_%%'"
+	    if grp_rpt_count_1 != 0
+			load :report_name = "select string_agg(report_name,',' order by report_group,report_name ) as rpt_nam from bl.bl_sbs_report_meta where report_group in(&&grp_name&&) and report_publish_flag='Y' and lower(report_group) not like 'adc_%%'"
+			foreach :p_report_name in :report_name
+				    report execute_report(:p_report_name)
+		else
+		    message D "No report list found to execute in this group"
+	output_options
+	

@@ -1,0 +1,1 @@
+delete from bl.bl_sbs_meta_header where group_name ='REPORT_FOR_FAILURES';

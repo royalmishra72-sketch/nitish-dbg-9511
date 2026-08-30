@@ -1,0 +1,49 @@
+#Workflow is used to perform Default insert into BL_SBS_CATALOG based on new catalog entry.
+create_new_catalog_wf(retention=90): Workflow is used to perform Default insert into BL_SBS_CATALOG based on new catalog entry.
+# Project:  Nissan NG DATA PUBLISHING
+#
+# Name: create_new_catalog_wf.wfl
+#
+# Purpose: This workflow is used to perform the pub data edits in case required.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     16-JAN-2025   CB           Initial Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# CB               Chandan Bhatia
+#===========================================================
+	output_version
+	output_options
+	load :cat_count = "select count(1) from pub_work.new_catalog_entry_v" 
+	load :email_list = "select string_agg(user_email_list,',') as address from bl.bl_sbs_pub_run_notification where process_name ='DEFAULT'"
+	load :new_cat_without_parts	= "select concat('MODEL: ', model,'; MODEL: ',model_desc) from new_catalog_entry_v where status = 'N'" 
+
+	if cat_count > 0 # Check and insert new catalog entries 
+		load :new_cat 	= "select concat('MODEL: ', model,'; MODEL: ',model_desc,'; FROM: ',from_date,'; TO: ', to_date,'; STATUS: ', status) from new_catalog_entry_v" 
+		set :sql_query = "insert into bl.BL_SBS_CATALOG (make,model,model_desc,pub_num,from_date,to_date,format,status,row_create_user_id)select make,model,model_desc,pub_num,from_date,to_date,format, status,'OneTouch' as row_create_user_id from new_catalog_entry_v" 
+		load :message = "select 'There is following new catalog. Please review and approve its entry for BL_SBS_CATALOG.'||chr(10)|| '&&new_cat&&'"
+		set :email_subject = "Alert: New Catalogs Arrived"
+		set :email_message = " &&message&& "
+		load :current_time_str = "select to_char(current_timestamp, 'DD-MON-YYYY HH:MI:SS PM')"
+		send_email :email_list "&&email_subject&&: &&current_time_str&&" "&&email_message&&"
+		message " &&message&& "
+		sql "&&sql_query&&"
+		wait_operator_response 300 " Please review New catalog entries. Make model name change now, if needed. " 
+
+
+	if new_cat_without_parts is not None
+		load :message = "select 'These Catalogs do not have parts data in bl_f31x1470_catalog_parts '||chr(10)|| '&&new_cat_without_parts&&' ||chr(10)|| 'So, catalog will not be published and status will be marked N in BL_SBS_CATALOG.'"
+		set :email_subject = "Alert: New Catalogs Missing parts Data"
+		set :email_message = " &&message&& "
+		load :current_time_str = "select to_char(current_timestamp, 'DD-MON-YYYY HH:MI:SS PM')"
+		send_email :email_list "&&email_subject&&: &&current_time_str&&" "&&email_message&&"
+		message " &&message&& "
+		wait_operator_response 300 " Please review New catalog entries without parts data. These catalogs will not be published. " 
+
+	
+	output_options
+		
+	

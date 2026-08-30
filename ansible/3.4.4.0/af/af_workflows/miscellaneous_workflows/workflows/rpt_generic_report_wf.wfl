@@ -1,0 +1,37 @@
+# This workflow used generate Reports.
+rpt_generic_report_wf(retention=90): This workflow used generate Reports.
+# Project:  NG DATA PUBLISHING
+#
+# Name: rpt_generic_report_wf.wfl
+#
+# Purpose:This workflow used to generate Reports.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     14-Mar-2023    BK           Initial Version
+#	2	  16-Aug-2023    BK			  [FDNGPUB-1072] After AF 1.7.1- To pass report at rn time 
+#   3     28-Aug-2023    PR           Modify wfl according to the nissan reports
+#   4     08-May-2026    NKM          NSPUB-1502 Use Parallel foreach command for executing reports parallelly
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# BK              Bipin Kumar
+# PR              Pawan Rajak
+# NKM             Nitish K Mishra
+#===========================================================
+	output_version
+	output_options
+	set :tag_domain = "Reports"
+	load :no_report_database_identifier = "select pub_admin.get_parameter('no_report_database_identifier')"
+	load :no_report_zero_length_attachment = "select pub_admin.get_parameter('no_report_zero_length_attachment')" 
+ 	load :grp_rpt_count_1 = "select count(1) as count from bl.bl_sbs_report_meta where report_group in(&&grp_name&&) and report_publish_flag='Y'"
+	set :parallel_foreach_limit = "10"
+	if grp_rpt_count_1 != 0
+		load :report_name = "select string_agg(report_name,',' order by report_group,report_name ) as rpt_nam from bl.bl_sbs_report_meta where report_group in(&&grp_name&&) and report_publish_flag='Y'"
+		parallel_foreach :p_report_name in :report_name
+			report execute_report(:p_report_name)
+	else
+		message D "No report list found to execute in this group"
+	output_options
+	

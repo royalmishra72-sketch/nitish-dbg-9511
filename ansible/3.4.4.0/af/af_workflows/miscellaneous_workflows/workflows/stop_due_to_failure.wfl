@@ -1,0 +1,119 @@
+#Workflow to autopopulate bl_sbs_report_failures table based on modifications in bl_sbs_report_meta
+stop_due_to_failure(schema_name=,cycle_status=,retention=90): Workflow to stop or pause cycle due to failures
+# Project: NEXT GEN PUBLISHING
+#
+# Name: stop_due_to_failure.wfl
+#
+# Purpose:  This workflow is used to to stop or pause cycle due to failures
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     28-NOV-2025    SM           Initial Version 
+#	2	  11-Mar-2026	 BK			  No Function call if there is no input schema passed.
+#	3	  14-April-2026	 BK			  FDNGPUB-2792: RDVT Enhancement vs 1.1.0
+#	4	  22-May-2026	 BK			  FDNGPUB-2827: Include 'ACTION NEEDED IMMEDIATELY' in RDVT report mail subject when any report have listed with failure
+#									  FDNGPUB-2827: Include fnc_rdvt_error_table_data() to load error hash in meta table 
+#									  FDNGPUB-2827: Update status of threshold_breach_report to warning, if the onlt list of **TABLE LISTS WITH WARNING ERROR COUNTS** exists in report 
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# 	SM               Smiley Mahajan
+#	BK				 Bipin Kumar
+#===========================================================
+	output_version
+	output_options
+	#load :exception_handler_email = "select string_agg(address,',') as address from bl.bl_email_notification_m where valid=1 group by valid" #Temp
+	load :no_report_database_identifier= "select pub_admin.get_parameter('no_report_database_identifier')"
+	load :db_name = "select upper(split_part('&&_dbid&&','_',1))"
+	if db_name == "SUB"
+		set :meta_header= 'bl_sub_meta_header'
+	else 
+		if db_name == "EQH"
+			set :meta_header= 'bl_sbs_meta_header_ng'
+		else 
+			set :meta_header= 'bl_sbs_meta_header'
+			
+	load :sql_stmt= "select concat('select element_code from bl.',&&meta_header&&,' where group_name = ''REPORT_FAILURE_ACTION''')"
+		
+	load :action_on_failure =&&sql_stmt&&
+	
+	load :is_valid_input = select count(distinct 1) from bl.bl_sbs_meta_blctrg_alrm_cnt a where upper(a.schema_name) =upper('&&schema_name&&') and upper(a.pub_cycle) =upper('&&cycle_status&&');
+	
+	if is_valid_input==0
+		message D "PASS"
+	else 
+	
+		# Update error table hash data in bl.bl_sbs_meta_blctrg_alrm_cnt table
+		sql "select fnc_rdvt_error_table_data('&&schema_name&&', '&&cycle_status&&')"
+
+
+		set :v_report_type = "INDIVIDUAL"
+		load :v_report_name= "select 'rdvt_'||'&&schema_name&&'||'_threshold_breach_report'"
+		set :v_parallel_foreach_limit = 1 
+		load :function_input_cycle_type= "select concat(',','''''','&&cycle_status&&','''''',')')"
+		
+		#update report_query and report_body to schema and cycle type specific
+		sql "update bl.bl_sbs_report_meta \
+		set report_query = replace(report_query,',**cycle_type**)','&&function_input_cycle_type&&') \
+		,report_body='PUB CYCLE TYPE: ' ||'&&cycle_status&&'||chr(10)||report_body \
+		where report_name ='&&v_report_name&&'"
+		
+		serial # Threshold breach report calling
+			load :v_name= select '&&v_report_name&&'
+			execute rdvt_generic_report_wf 
+
+		#reset bl_sbs_report_meta
+		sql "update bl.bl_sbs_report_meta \
+ 		set report_query = replace(report_query,'&&function_input_cycle_type&&',',**cycle_type**)')\
+		,report_body='Process has been stopped to validate data for issues as reported in attached CSV' \
+		where report_name ='&&v_report_name&&'"
+		
+	serial # Update RDVT Report subject
+		
+		load :failure_count = "select count(1) from bl.bl_sbs_report_failures where status ='failure'"
+		
+		if failure_count != 0  #Include ACTION NEEDED IMMEDIATELY in rdvt report subject when there is failure 
+			sql	"update bl.bl_sbs_report_meta set report_subject = 'ACTION NEEDED IMMEDIATELY - RDVT REPORT:- Generated with status Warning or Failure' where report_name ='report_for_warning_n_failure'"
+		else #When there is no failure mail subject Notify for wanrning only 
+			sql	"update bl.bl_sbs_report_meta set report_subject = 'IMPORTANT RDVT REPORT:- Generated with status Warning' where report_name ='report_for_warning_n_failure'"
+	
+	
+	load :v_email_body = select concat('update bl.bl_sbs_report_meta set report_body = concat(report_body,'' :- '',chr(10),chr(13),(select email_body from pub_work.fnc_rdvt_failures_mail_body(','''&&schema_name&&''',')),chr(10),chr(13),''Thanks'',chr(10),''Nissan Publishing Team'') where report_name =''report_for_warning_n_failure''')
+	sql "&&v_email_body&&"
+	
+	serial # rdvt_report calling for list of warnign and failure 			
+		set :v_report_type = "GROUP"
+		set :v_name = "rdvt_report"
+		set :v_parallel_foreach_limit = 1
+		execute rdvt_generic_report_wf
+		
+	serial #Reset rdvt report subject
+		sql "update bl.bl_sbs_report_meta set report_subject = 'IMPORTANT RDVT REPORT:- Generated with status Warning or Failure',report_body='This report is listing reports that are generated with status Warning or Failure' where report_name ='report_for_warning_n_failure'"
+	
+	#Update status of threshold_breach_report to warning, if only list of **TABLE LISTS WITH WARNING ERROR COUNTS** exists in report 
+	if is_valid_input==0
+		message D "PASS"
+	else
+		load :sql_stmt1=select concat('update bl.bl_sbs_report_failures set status =''warning'' where report_name =','''&&v_report_name&&''',' and (select count(1)= sum(case when col1 =''**TABLE LISTS WITH WARNING ERROR COUNTS**'' then 1 else 0 end) only_warning from pub_work.report_','&&v_report_name&&',' where col1 like ''**%%**'')')
+		
+		sql "&&sql_stmt1&&"
+	
+	load :report_data_validation_status = "select pub_work.fnc_stop_due_to_failure()"
+	
+
+	if report_data_validation_status == "GO AHEAD" 	
+		message D "No concerns proceeding forward in publishing cycle execution. Threshold Counts and Report Data so far looks good."
+	else 
+		load :error_message = "select trim(concat('&&report_data_validation_status&&'))"
+		if action_on_failure == "PAUSE"
+			load :email_subject = "select concat(upper('&&_dbid&&'),' - ACTION NEEDED IMMEDIATELY: RDVT',' at '||upper(nullif(trim('&&schema_name&&'),''))|| ' level',' - Wait Process for validating data for reported issues - Initiated')"
+			load :email_message = "select concat('Process has been stopped to validate data for issues as reported below: ',chr(10),'&&error_message&&')"
+			load :current_time_str = "select to_char(current_timestamp, 'DD-MON-YYYY HH:MI:SS PM')"
+			send_email :exception_handler_email "&&email_subject&&: &&current_time_str&&" "&&email_message&&"
+			wait_operator_response 5760 "Please respond if data is good to proceed forward."
+		else	
+			# message E "&&error_message&&"
+			execute rdvt_error_message_wf
+	
+	output_options

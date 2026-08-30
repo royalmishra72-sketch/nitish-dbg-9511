@@ -1,0 +1,58 @@
+#workflow used to load Work Tables.
+load_work_wf: This Workflow used to load Work Tables.
+# Project: NISSAN DATA PUBLISHING
+#
+# Name: load_work_wf.wfl
+#
+# Purpose:  This workflow is used to load Work Tables.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date          Revisor      Comment
+#   1      16-JUN-2023   DNU          Initial Version 
+#   2      31-JULY-2025  NKM          Rearrange the loading process to reduce loading time
+#   3      05-AUG-2026   CB           Publish image_data_w_v added	
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# DNU                DILESH N. UKEY
+# NKM                Nitish K Mishra
+# CB                 Chandan Bhatia
+#===========================================================
+    output_version
+    output_options
+	set :tag_area = "BL to Work"
+	set :tag_domain = "Work"
+    serial # This block will load the data in serial.
+        parallel # This block will load the data in parallel.
+            publish pub_work.vin_multi_cat_w_v
+            serial # This block will load the data in serial.
+                publish pub_work.part_addl_info_w_v
+                publish pub_work.servfile_w_v                            
+                publish pub_work.model_display_groups_w_v                
+                publish pub_work.spec_code_string_w_v                    
+                publish pub_work.spec_code_desc_w_v 
+        parallel # This block will load the data in parallel.				
+			publish pub_work.merge_parts_w_v                            
+			publish pub_work.spec_code_w_v  
+			publish pub_work.image_w_v
+        parallel # This block will load the data in parallel.
+            publish pub_work.part_item_appl_filter_w_v                
+            publish pub_work.part_item_w_v                            
+            publish pub_work.part_item_non_appl_filter_w_v   
+            serial # This block will load the data in serial.
+				publish pub_work.image_data_w_v
+                publish pub_work.page_w_v                               
+                publish pub_work.part_item_addl_info_w_v       
+                publish pub_work.part_w_v
+				publish pub_work.vin_type_range_w_v
+                publish pub_work.vin_catalog_map_base_w_v         
+        publish pub_work.vin_filters_w_v                            
+        publish pub_work.vin_filter_dtswitch_w_v              
+        publish pub_work.vin_catalog_map_nrml_w_v       
+        publish pub_work.vin_catalog_map_w_v 
+		publish pub_work.bl_sbs_catalog_update_v		
+        parallel # This block will load the data in parallel.
+			publish pub_work.filter_item_w_v                          
+			publish pub_work.ein_addl_info_w_v
+	output_options

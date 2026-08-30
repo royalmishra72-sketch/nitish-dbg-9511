@@ -1,0 +1,52 @@
+#This workflow will data check for new catalog
+new_catalog_data_check_wf(retention=90): This workflow will data check for new catalog
+# Project:  Nissan NG DATA PUBLISHING
+#
+# Name: new_catalog_data_check_wf.wfl
+#
+# Purpose: This workflow will data check for new catalog
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     29-JAN-2025   CB           Initial Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# CB               Chandan Bhatia
+#===========================================================
+	output_version
+	output_options
+
+
+	load :cats_marked_y = "select concat('MODEL: ', model,'; MODEL: ',model_desc,'; FROM: ',from_date,'; TO: ', to_date) from bl.bl_sbs_catalog c where status = 'N' and 1000 < ( select count(1) from   bl.bl_f31x1470_catalog_parts bfxcp where  bfxcp.mdl_ser_code = c.model)"				
+
+	if cats_marked_y is not None # Check parts data for new catalog 
+		load :message = "select 'Following catalogs marked Status Y as parts data is now available in bl_f31x1470_catalog_parts. '||chr(10)|| '&&cats_marked_y&&'"
+		set :email_subject = "Alert: Catalogs marked 'Y' for Publishing"
+		set :email_message = " &&message&& "
+		load :current_time_str = "select to_char(current_timestamp, 'DD-MON-YYYY HH:MI:SS PM')"
+		send_email :email_list "&&email_subject&&: &&current_time_str&&" "&&email_message&&"
+		message " &&message&& "
+		sql "update bl.bl_sbs_catalog c set status = 'Y' where status = 'N' and 1000 < ( select count(1) from  bl.bl_f31x1470_catalog_parts bfxcp where  bfxcp.mdl_ser_code = c.model)"				
+
+	load :new_catalogs = "select  string_agg(model,',' order by null)  as catalog  \
+						from   bl.bl_sbs_catalog c \
+						where  c.status = 'Y' \
+						and    model not in ( select code from ctrg.catalog )" 
+	
+	foreach :new_cat in :new_catalogs # Check for each new catalog marked status = Y
+		load :bl_sbs_section_count = "select count(1) from bl.bl_sbs_section bss where bss.mdl_ser_code in ( '&&new_cat&&')" 
+		load :bl_sbs_illust_count = "select count(1) from bl.bl_sbs_illust where catalog in ( '&&new_cat&&') " 
+		load :illustration_count = "select count(1) from  bl.bl_sbs_illust si inner join bl.bl_image_data bid on  si.img_name = bid.img_name where si.catalog in ( '&&new_cat&&')" 
+		load :message = "select 'NEW CATALOG: '||'&&new_cat&&'||chr(10)|| 'BL_SBS_SECTION_COUNT: '||'&&bl_sbs_section_count&&'|| chr(10)|| 'BL_SBS_ILLUST_COUNT: '||'&&bl_sbs_illust_count&&'|| chr(10)||'ILLUSTRATION_COUNT: '|| '&&illustration_count&&'||chr(10)||'NOTE: BL_SBS_SECTION_COUNT should be > 50, BL_SBS_ILLUST_COUNT should be > 100 AND ILLUSTRATION_COUNT should be > 100'"
+		
+		if bl_sbs_section_count < 50 or bl_sbs_illust_count < 100 or illustration_count < 100 
+			exit E "WARNING: &&message&&"			 
+		else 
+			message ":message"
+
+
+	output_options
+		
+	

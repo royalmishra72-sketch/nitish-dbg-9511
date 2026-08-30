@@ -1,0 +1,25 @@
+#workflow used to load Illustration Images to BL
+load_illustration_image_to_bl_wf(retention=90):  This workflow is used for load Illustration Images to BL.
+# Project:  NISSAN NA NG DATA PUBLISHING
+#
+# Name: load_illustration_image_to_bl_wf.wfl
+#
+# Purpose:  This workflow is used to load Illustration Images to BL.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date           Revisor      Comment
+#   1      25-JULY-2023   NKM          Initial Version 
+#	2      19-Jan-2026    NKM          Add SVG Image Loading Process
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+#  NKM               NITISH KUMAR MISHRA
+#===========================================================
+	output_version
+	output_options	
+	set :tag_area = "Feed to BL"
+	set :tag_domain = "IMAGE"
+	execute load_tif_image_to_bl_wf #Load TIF Image
+	execute load_svg_image_to_bl_wf #Load SVG Image
+	output_options

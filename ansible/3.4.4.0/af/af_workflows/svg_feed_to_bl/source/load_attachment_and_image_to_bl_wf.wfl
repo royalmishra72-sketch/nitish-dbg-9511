@@ -1,0 +1,34 @@
+#workflow used for load attachments and Images to BL
+load_attachment_and_image_to_bl_wf(retention=90):  This workflow is used for load attachments and Images to BL.
+# Project:  NISSAN NA NG DATA PUBLISHING
+#
+# Name: load_attachment_and_image_to_bl_wf.wfl
+#
+# Purpose:  TThis workflow is used for load attachments and Images to BL.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date           Revisor      Comment
+#   1      30-APR-2026   NKM          Initial Version 
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+#  NKM               NITISH KUMAR MISHRA
+#===========================================================
+	output_version
+	output_options	
+	set :tag_area = "Feed to BL"
+	set :tag_domain = "Image and Attachment"
+	sql "truncate table curr_run_image_data_w"
+	sql "truncate table curr_run_source_image_w"
+	execute load_model_image_to_bl_wf #Model Image Load
+	execute load_chapter_image_to_bl_wf #Group Image Load
+	execute load_attachment_to_bl_gi_wf #GI Attachment Load 
+	execute load_attachment_to_bl_pricebook_wf #Pricebook Attachment Load
+	execute load_illustration_image_to_bl_wf #TIF and SVG Image Load
+	serial # Reports
+		set :grp_name = "'nis_image_not_processed'" 
+		execute rpt_generic_report_wf
+		set :grp_name = "'nis_bl_large_images'" 
+		execute rpt_generic_report_wf
+	output_options

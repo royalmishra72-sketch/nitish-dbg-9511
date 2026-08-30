@@ -1,0 +1,49 @@
+---
+- name: NIS_SETUP_LINKS_LINUX_MASTER_SCRIPT_3.4.4.0
+  hosts: PBA_Servers
+  gather_facts: true
+  
+  vars_files:
+    - "/opt/ctol/Current_Version/adt_version.yml"
+    - "/opt/ctol/AutomatedDeploymentTool/ADT_{{ use_adt_version|regex_replace('\"', '')|regex_replace(\"'\", '')|trim if (use_adt_version is defined and use_adt_version|trim != '') else current_adt_version }}/Config/adt_global.config"
+  
+  vars: 
+    add_to_recepient_list:
+      - nitish.k.mishra@snapon.com
+      - chandan.bhatia@snapon.com
+
+    ignore_config_mail_to_list: true
+    
+    artifactory_url: "{% if version is search('SNAPSHOT') %}{{ artifactory_snaphot_base_url_global }}{% else %}{{ artifactory_base_url_global }}{% endif %}"
+
+    pba_epo_root_path: "/N/Nissan/NISCornerstone/EPO"
+    pba_env_root_path: "/N/Nissan/NISCornerstone/1.0.0.0"
+    
+    ######################################################################################################
+    #
+    # Created By: Nitish Kumar Mishra 
+    # Created On: 02 FEB 2026
+    #
+    # Purpose: Master script to create publishing directories at pubapp server
+    #
+    ######################################################################################################
+    
+    
+    cmd_list:
+      #Check if DIR exists
+      - {"cmd": "stat", "target": "HOST_DIR", "target_path": "{{ pba_env_root_path }}","not_exist":"fail"}
+      - {"cmd": "stat", "target": "HOST_DIR","target_path": "{{ pba_epo_root_path }}","not_exist":"fail"}
+      
+      #/N/Nissan/NISCornerstone/EPO/SVGImages    
+      - {"cmd": "mkdir", "target": "HOST_DIR", "target_path": "{{ pba_epo_root_path }}/SVGImages"}
+      - {"cmd": "chmod", "permissions": "6777", "target": "HOST_DIR", "target_type": "DIR", "target_path": "{{ pba_epo_root_path }}/SVGImages"} 
+      
+      #/N/Nissan/NISCornerstone/1.0.0.0/data/depot/archive/Images/SVGImages 
+      - {"cmd": "mkdir_tree", "target": "HOST_DIR", "target_path": "{{ pba_env_root_path }}/data/depot/archive/Images/SVGImages"}
+      - {"cmd": "chmod", "permissions": "6775", "target": "HOST_DIR", "target_type": "DIR", "target_path": "{{ pba_env_root_path }}/data/depot/archive/Images/SVGImages"}
+      
+      
+  tasks:
+    
+    - name: start processing 
+      include_tasks: "{{ adt_code_path }}/adt_initiator.yml"

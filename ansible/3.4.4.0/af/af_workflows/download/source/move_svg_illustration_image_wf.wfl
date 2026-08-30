@@ -1,0 +1,29 @@
+#workflow is used to move the unzipped svg image File to EPO directory..
+move_svg_illustration_image_wf(retention=90):  This workflow is used to move the unzipped svg image File to EPO directory.
+# Project:  NISSAN NG DATA PUBLISHING
+#
+# Name: move_svg_illustration_image_wf.wfl
+#
+# Purpose:  This workflow is used to move the unzipped svg image File to EPO directory.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date            Revisor      Comment
+#   1      12-Jan-2026    NKM          Initial Version 
+#===========================================================
+# Revisor
+# [Initials]		 [Full Name]
+#  NKM                Nitish K Mishra
+#===========================================================
+	output_version
+	output_options	
+	set :tag_domain = "SVG IMAGE"
+	set :tag_other = "NISSAN"
+	load :root_path= "select pub_admin.get_parameter('PBAEnvRootPath')"
+	load :epo_path= "select pub_admin.get_parameter('PBAEPORootPath')"
+	set :dr_group_datasource = "DOWNLOAD_NIS_SVG_IMAGE_FILES"
+	stage :datareceipt_id 
+	set :Target="&&epo_path&&/SVGImages"
+	run &&root_path&&app/script/move_svg_images.sh &&path&& &&Target&& 
+	cleanup :datareceipt_id
+	output_options

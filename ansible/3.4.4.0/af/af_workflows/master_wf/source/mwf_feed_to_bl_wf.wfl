@@ -1,0 +1,116 @@
+#workflow used to load BL Tables.
+mwf_feed_to_bl_wf: This Workflow used to load BL Tables.
+# Project: NISSAN DATA PUBLISHING
+#
+# Name: mwf_feed_to_bl_wf.wfl
+#
+# Purpose:  This workflow is used to load BL Tables.
+#
+#===========================================================
+# Revision History
+#   Ref #  Date          Revisor      Comment
+#   1      08-AUG-2023   DNU          Initial Version  
+#   2      29-AUG-2023   PR           Update generic reporting wfl.    
+#	3      17-SEP-2024   NKM          Add Model,Chapter and Attachment Loading Process  
+#	4      30-JAN-2026   CB           Added dvt_report, stop_due_to_failure, create_new_catalog_wf 	
+#   5      07-MAY-2026   NKM          NSPUB-1496 Fix Missing SVG Report Failure in Second Cycle Due to curr_run_source_image_w Truncation
+#   6     10-June-2026   NKM          RDVT 1.1.0 and 1.2.0 Enhancement
+#   7     16-June-2026   NKM          Add backup status reset for LVT tables 
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# DNU                DILESH N. UKEY
+# PR                 PAWAN RAJAK
+# NKM                Nitish K Mishra 
+# CB                 Chandan Bhatia 
+#===========================================================
+    output_version
+    output_options	
+	set :tag_area = "Feed to BL"
+	serial # Feed To BL Initiated Email
+		set :v_process_name = "MWF_FEED_TO_BL_START"
+		execute generic_email_wf
+	execute prc_data_backup_pb_flag_reset_wf
+	sql "call pub_admin.set_parameter_value('LVT_LUCENE_BACKUP','TODO')"
+	serial # This step will take backup of all sbs tables.
+		set :tab_bckup_grp = "sbs"
+		execute prc_data_backup_wf
+	serial # This step will take backup of  bl_f31x1470_catalog_parts table.
+		set :tab_bckup_grp = "parts"
+		execute prc_data_backup_wf	
+	serial # This step will take backup of bl_f31x1340_vin table.
+		set :tab_bckup_grp = "vin"
+		execute prc_data_backup_wf
+	serial # This step will take backup of bl_image_data table.
+		set :tab_bckup_grp = "bl_image_data"
+		execute prc_data_backup_wf		
+	serial # SBS Section Feed and Illust Feed
+		datareceipt Nissan_Section
+		datareceipt SBS_ILLUST
+	serial #Conversion of CD Files
+		execute dr_nml_parts_cd1_conversion_wf
+		execute dr_nml_parts_cd2_conversion_wf
+		execute dr_nml_misc_cd3_conversion_wf
+		execute dr_nml_vin_cd4_conversion_wf
+		execute dr_nml_parts_cd5_conversion_wf
+		execute dr_nml_parts_cd6_conversion_wf
+		execute dr_nml_vin_cd7_conversion_wf
+	serial #Loading feeds CD1,CD2,CD5,CD6
+		datareceipt catalog_parts_cd1
+		datareceipt catalog_parts_cd2
+		datareceipt catalog_parts_cd5
+		datareceipt catalog_parts_cd6
+	serial #Loading NML CD7 Feed
+		datareceipt Nissan_NML_VIN2
+	serial #Loading NML CD4 Feed
+		datareceipt Nissan_NML_VIN1
+	serial #NML CD3 Feed
+		datareceipt Nissan_18DigitModelCode
+		datareceipt Nissan_ModelControl
+		datareceipt Nissan_AppliedModelOld
+		datareceipt Nissan_CDExpression
+		datareceipt Nissan_TOMChassis
+		datareceipt Nissan_VINDist
+		datareceipt Nissan_MinorChgSwitch
+		datareceipt Nissan_SpecSeq
+		datareceipt Nissan_TSBPartNum
+		datareceipt Nissan_Abbreviation
+		datareceipt Nissan_PartCode
+		datareceipt Nissan_SupPartNum
+		datareceipt Nissan_CatalogStatusNew
+		datareceipt Nissan_AppliedModelNew
+		datareceipt Nissan_SpecTrans
+		datareceipt Nissan_CatalogUseExp
+		datareceipt Nissan_CatalogStatusOld
+		datareceipt Nissan_CatalogTypeControl
+	serial # NNA Feeds
+		datareceipt Nissan_SYNONYMS
+		datareceipt VA_PARTS
+		datareceipt NissanParts
+		datareceipt NissanPrice
+		datareceipt NissanServfile
+		datareceipt NissanSupersession
+		datareceipt ILLUSTRATION_CHANGE
+		sql "truncate table pre_bl_nna_illust_master_w"
+		datareceipt NNA_ILLUST_MASTER
+	serial # SUPPORT AND FEATURE MAP
+		datareceipt GEN_SBS_SUPPORT
+		datareceipt GEN_FEATURE_MAP
+	execute load_attachment_and_image_to_bl_wf
+	serial # This step will Generate all BL Reports.
+		set :grp_name = "'bl_reports'"
+		execute rpt_generic_report_wf
+	serial # This Step will generate Rowcount and Threshold report for BL schema.
+		load :ct_rcth_schema_name = "select 'bl'"
+		execute tool_rpt_rowcount_threshold
+	serial # RDVT Reports Checks
+		set :schema_name = "bl"
+		set :cycle_status = "monthly"
+		execute stop_due_to_failure 	
+		execute exit_due_to_failure 	
+	execute create_new_catalog_wf #New Catalog Entry
+	execute dr_purge_wf
+	serial # Feed To BL Completed Email
+		set :v_process_name = "MWF_FEED_TO_BL_END"
+		execute generic_email_wf
+	output_options

@@ -1,0 +1,51 @@
+# This workflow used to Generate Reports.
+run_pub_report_wf(report_name_regexp=,report_type=[NORMAL:ADC]) : This workflow used to Generate Reports.
+# Project:  Nissan NG DATA PUBLISHING
+#
+# Name: run_pub_report_wf.wfl
+#
+# Purpose:This workflow used to Generate Reports.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     03-Mar-2024    NKM          Initial Version
+#   2     20-May-2024    SV           QA Automation reports included
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# NKM                Nitish K Mishra
+# SV                 Samit Verma
+#===========================================================
+	output_version
+	output_options
+	set :tag_domain = "Reports"
+	set :rpt_type = "&&report_type&&"
+	if rpt_type == NONE or rpt_type ==''
+		set :rpt_type ="NORMAL"
+	# Write out the individual Report
+	load :no_report_database_identifier = "select pub_admin.get_parameter('no_report_database_identifier')"
+	if rpt_type == "ADC"
+			load :rpt_grpt = "select string_agg(distinct report_group, ',' order by report_group )from bl.bl_sbs_report_meta where report_group ~ 'adc_qa'"
+			set :rpt_grpv = "'&&rpt_grpt&&'"
+			load :rpt_grp = "SELECT array_to_string(ARRAY(SELECT quote_literal(unnest(string_to_array(&&rpt_grpv&&, ',')))), ',')"
+			load :report_name = "select string_agg(report_name, ',' order by report_name ) \
+						from bl.bl_sbs_report_meta \
+						where  report_group in (&&rpt_grp&&) and report_name ~ %s",:report_name_regexp 
+			if report_name != None
+				foreach :p_adc_report_name in :report_name
+						load :rep_cnt =  "select p_out_attachment from fnc_adc_qa_report('&&p_adc_report_name&&')"
+						if rep_cnt is not null
+					        report nis_adc_qa_reports(:p_adc_report_name)
+			else
+				message D "Hello -Please Pass Valid Report Name"
+	else
+			load :report_name = "select string_agg(report_name, ',' order by report_name ) \
+						from bl.bl_sbs_report_meta \
+						where  report_group !~ 'adc_qa' and  report_name ~ %s",:report_name_regexp
+			if report_name != None
+				foreach :p_report_name in :report_name
+					    report execute_report(:p_report_name)
+			else
+			    message D "Hello -Please Pass Valid Report Name"
+	output_options
