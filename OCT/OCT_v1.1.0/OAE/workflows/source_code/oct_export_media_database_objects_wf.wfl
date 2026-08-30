@@ -1,0 +1,41 @@
+# This workflow is use to exports Media Database objects
+oct_export_media_database_objects_wf(retention=90): This workflow is use to exports Media Database objects
+# Project: Ford NextGen DATA PUBLISHING
+#
+# Name: oct_export_media_database_objects_wf.wfl
+#
+# Purpose: This workflow is use to exports Media Database objects
+#
+#===========================================================
+# Revision History
+#   Ref    Date          Revisor      Comment
+#   1      21-APR-2025   SA          FDNGPUB-2235 - Initial Version, to Fetch CTRG Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# SA                Sonu Aggarwal
+#===========================================================
+    output_version
+    output_options
+	set :tag_area = "SD"
+	set :tag_other = "OCT"
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+	serial #Fetch ctrg Version from Media Database
+		load :chk_media_exists = "select count(property) from ctrg_support.sbs_property where common_tool_name = 'POSTGRESQL_EXTRACT' and property_key = 'TARGET_USER'"
+		if chk_media_exists > 0 #check whether OEM has MEDIA or not
+			load :v_dataset_ids = "select string_agg(dataset_id,',') as dataset_id from ctrg_support.sbs_schema_target_type_x"
+			foreach :v_dataset_id in :v_dataset_ids #Fetch info for each dataset
+				load :v_db_identifier = "select property from ctrg_support.sbs_property where common_tool_name = 'POSTGRESQL_EXTRACT' and property_key = 'MEDIA_TRG_DB_IDENTIFIER' and dataset_id=%s",:v_dataset_id
+				load :v_targ_user = "select property from ctrg_support.sbs_property where common_tool_name = 'POSTGRESQL_EXTRACT' and property_key = 'TARGET_USER' and dataset_id=%s",:v_dataset_id
+				load :v_schema_name ="select upper(schema_name) from ctrg_support.sbs_schema_target_type_x where dataset_id =%s",:v_dataset_id
+				# run_credentials tells the run command to provide the credentials for the media database.
+				set :run_credentials = "&&v_db_identifier&&,&&v_targ_user&&"
+				# This run command connects to the Media database, fetch the ctrg version.
+				run psql -t -c "select version from ctrg_version where is_current =1"
+				load :curr_media_ctrg_version = select '&&stdout&&'
+				sql "delete from bl.bl_sbs_oct_meta_header where group_name ='MEDIA_DB_CTRG_VERSION' and code=%s",:v_schema_name
+				sql "insert into bl.bl_sbs_oct_meta_header (group_name,code,value,description) values \
+				('MEDIA_DB_CTRG_VERSION','&&v_schema_name&&','&&curr_media_ctrg_version&&','OCT Tool entry to store current media Database ctrg version for comparison')"
+		else
+			message D "Seems No Media Database is available"
+	output_options

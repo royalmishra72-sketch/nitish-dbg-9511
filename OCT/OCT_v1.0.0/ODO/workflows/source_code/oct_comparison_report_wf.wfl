@@ -1,0 +1,29 @@
+#This workflow used to compare data of table oct_ddl_tier1 and oct_ddl_tier2.
+oct_comparison_report_wf(retention=90): This workflow used to compare data of table oct_ddl_tier1 and oct_ddl_tier2.
+# Project:  FORD
+#
+# Name: oct_comparison_report_wf.wfl
+#
+# Purpose: This workflow used to compare data of table oct_ddl_tier1 and oct_ddl_tier2.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     30-May-2024    BK          Initial Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# BK				BIPIN KUMAR
+#===========================================================
+	output_version
+	output_options
+	set :tag_domain = "SD"
+	set :tag_other = "OCT"
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+	load :file_name1 ="select definition from pub_work.oct_ddl_tier1 odt1 where odt1.object_name='FILE NAME'"
+	load :file_name2 ="select definition from pub_work.oct_ddl_tier2 odt1 where odt1.object_name='FILE NAME'"
+	if file_name1==file_name2
+		message E "You are trying to compare the same file's data: &&file_name1&&"
+	else
+		report oct_ddl_comparison()
+	output_options

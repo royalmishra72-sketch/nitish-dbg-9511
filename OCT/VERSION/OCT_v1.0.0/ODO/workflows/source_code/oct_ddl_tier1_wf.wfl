@@ -1,0 +1,25 @@
+#This workflow use to populate data from file to oct_ddl_tier1 table
+oct_ddl_tier1_wf(retention=90): This workflow use to populate data from file to oct_ddl_tier1 table
+# Project:  Ford NextGen Snap-on EPC
+#
+# Name: oct_ddl_tier1_wf.wfl
+#
+# Purpose:This workflow use to populate data into oct_ddl_tier1 table
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     01-05-2024     BK           Initial Version
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# 	BK				Bipin Kumar
+#===========================================================
+    output_version
+    output_options
+    set :tag_area = "SD"
+	set :tag_other = "OCT"
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+	set :file_buffersize_override ="100000000"
+	publish pub_work.file_oct_ddl_tier1 # To load oct_ddl_tier1 table
+    output_options

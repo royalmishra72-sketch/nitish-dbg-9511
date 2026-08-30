@@ -1,0 +1,40 @@
+# This workflow use to export scripts from pba server.
+oct_export_script_report_wf(retention=180,v_input_directory=DEFAULT,v_exclude_subdirs=DEFAULT,v_exclude_files=DEFAULT,v_exclude_file_patterns=DEFAULT):  This workflow use to export scripts from pba server.
+# Project:  FORD
+#
+# Name: oct_export_script_report_wf.wfl
+#
+# Purpose: This workflow use to export scripts from pba server.
+#
+#===========================================================
+# Revision History
+#   Ref   Date          Revisor      Comment
+#   1     23-05-2024    BK           Initial Version
+#	2	  26-Jul-2024	RT			 Input parameter name change
+#	3	  11-SEP-2025   RT			 [FDNGPUB-2559] - To call python script for Python Version Upgrade Without Publishing Code Change
+#===========================================================
+# Revisor
+# [Initials]		[Full Name]
+# BK				Bipin Kumar
+# RT				Richa Thakur
+#===========================================================
+	output_version
+	output_options
+	set :tag_area = "SD"
+	set :tag_other = "OCT"
+	
+	load :exception_handler_email = "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"	
+	load :script_path="select root||script.get_parameter||'OCT/' from pub_admin.get_parameter('PBAEnvRootPath') root cross join (select pub_admin.get_parameter('PATH_COMMON_SCRIPT')) script"
+
+	load :input_directory= "SELECT case when '&&v_input_directory&&'='DEFAULT' then pub_admin.get_parameter('OCT')::jsonb->>'root_directory' else '&&v_input_directory&&' end AS root_directory"
+	load :csv_file_path= "select pub_admin.get_parameter('OCT')::jsonb->>'root_directory'"
+	load :sender_email= "select '&&system_user&&@snapon.com'"
+	load :recipient_email= "select pub_admin.get_parameter('OCT')::jsonb->>'email_to' AS email_to"
+	load :exclude_subdirs= "select case when '&&v_exclude_subdirs&&'='DEFAULT' then pub_admin.get_parameter('OCT')::jsonb->>'skip_folder_ls' else concat(pub_admin.get_parameter('OCT')::jsonb->>'skip_folder_ls',',','&&v_exclude_subdirs&&') end as skip_folder_ls"
+	load :exclude_file_list= "select case when '&&v_exclude_files&&'='DEFAULT' then pub_admin.get_parameter('OCT')::jsonb->>'skip_file_ls' else concat(pub_admin.get_parameter('OCT')::jsonb->>'skip_file_ls',',','&&v_exclude_files&&') end as skip_file_ls"
+	load :exclude_file_pattern= "select case when '&&v_exclude_file_patterns&&'='DEFAULT' then pub_admin.get_parameter('OCT')::jsonb->>'skip_file_patterns' else concat(pub_admin.get_parameter('OCT')::jsonb->>'skip_file_patterns',',','&&v_exclude_file_patterns&&') end as skip_file_pattern"
+	load :db_name= "select upper(concat(split_part(current_database(),'_',1)||'_'||split_part(current_database(),'_',3)||'_'||split_part(current_database(),'_',4)))"
+	load :hash_comparable_file_pattern_list = "select pub_admin.get_parameter('OCT')::jsonb->>'hash_comparable_file_pattern'"
+	load :pba_python_path = "select pub_admin.get_parameter('pba_python_path')"
+	run &&pba_python_path&& &&script_path&&oct_script_export.py &&input_directory&& &&csv_file_path&& &&sender_email&& &&recipient_email&& &&exclude_subdirs&& &&exclude_file_list&& &&exclude_file_pattern&& &&db_name&& &&hash_comparable_file_pattern_list&&
+	output_options
