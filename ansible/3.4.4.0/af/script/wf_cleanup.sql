@@ -1,1 +1,0 @@
-select af_repo.af_delete_workflows('master_download_illustration_wf,image_to_process_report_wf');
